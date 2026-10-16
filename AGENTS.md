@@ -29,8 +29,14 @@ The provider checks `AiClient::VERSION` before using newer features:
 
 ## Models
 - Models are dynamically discovered from OpenCode's `/models` endpoint.
-- Two models have explicit display-name mappings: `deepseek-v4-flash` and `deepseek-v4-pro`. All others get auto-formatted display names.
+- `formatDisplayName()` has explicit display-name mappings for the known catalogue; anything else gets an auto-formatted name. Keep the map in sync as models come and go.
 - Every model returned from the API gets `textGeneration` + `chatHistory` capabilities.
+
+## Vision (image input)
+- OpenCode's `/models` endpoint does **not** return capabilities, so vision support is a hardcoded allowlist: `Nominal_AIPO_OpenCodeModelMetadataDirectory::VISION_MODEL_IDS`.
+- Vision-capable models declare `inputModalities` as `[[text], [text, image]]`; everything else stays `[[text]]`.
+- Only the **image** modality is declared, because the SDK's OpenAI-compatible text generation model can only serialise image (and inline audio) file parts — declaring `document`/`video` would produce runtime errors.
+- The list can be extended at runtime via the `nominal_ai_po_opencode_vision_models` filter.
 
 ## Request headers / session ID
 - Every request merges in `Nominal_AIPO_OpenCodeProvider::requestHeaders()`, which sends `x-opencode-session` (required by OpenCode Go for routing/prompt-caching).

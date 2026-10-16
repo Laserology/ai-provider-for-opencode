@@ -16,6 +16,7 @@ OpenCode provides access to a variety of open-source models through a unified AP
 
 - **Text Generation** — Use OpenCode's language models for content creation, summarization, analysis, and more.
 - **Vision** — Send images to OpenCode's multimodal models (Claude Haiku 5.5, Gemini 4 Argon, GPT 6 Luna, Grok 4.7, Kimi K3, Qwen3.8, MiMo, MiniMax M3, Muse Spark, and others).
+- **Automatic image conversion** — Images in formats OpenCode rejects (BMP, TIFF, HEIC, SVG, or a wrong MIME label) are re-encoded on the fly to webp/png/jpeg/gif before the request is sent, so they don't fail with a 400.
 - **Chat History** — Maintain conversation context across multiple interactions.
 - **OpenCode Go Session Header** — Every request carries the `x-opencode-session` header so OpenCode Go can optimize routing and prompt caching.
 - **Dynamic Model Discovery** — Available models are fetched directly from the OpenCode API, so your plugin stays compatible with new releases automatically.
@@ -140,6 +141,15 @@ $result = AiClient::prompt( 'What is in this image?' )
 echo $result->toText();
 ```
 
+OpenCode's upstream providers only accept **webp, png, jpeg, and gif** images. If you attach anything else (a BMP, TIFF, HEIC, SVG, or a file with a wrong MIME label), the plugin sniffs the real format and re-encodes it automatically — remote images are downloaded to your server first, then converted. Change the target format with the `nominal_ai_po_opencode_image_conversion_mime_type` filter:
+
+```php
+// Convert unsupported images to JPEG instead of the default webp.
+add_filter( 'nominal_ai_po_opencode_image_conversion_mime_type', fn() => 'image/jpeg' );
+```
+
+SVG, TIFF, and HEIC cannot be decoded by GD, so they are passed through unchanged and will still be rejected upstream.
+
 ## Configuration
 
 The provider uses the `OPENCODE_API_KEY` environment variable for authentication. Set it via your environment, `wp-config.php`, or inline:
@@ -176,7 +186,7 @@ This plugin connects to the OpenCode API to provide AI capabilities within WordP
 
 **What data is sent and when:**
 - Your OpenCode API key is sent with every request to authenticate with the service.
-- Any text prompts, messages, or content you submit for AI processing are sent to OpenCode's servers. When you use a vision-capable model, any images you attach are sent as well.
+- Any text prompts, messages, or content you submit for AI processing are sent to OpenCode's servers. When you use a vision-capable model, any images you attach are sent as well; unsupported images are converted to a supported format first, which involves downloading remote images to your server.
 - A session identifier is sent in the `x-opencode-session` header so OpenCode Go can optimize routing and prompt caching.
 - A request is made to the OpenCode API to fetch available models when the plugin initializes.
 - Data is only transmitted when AI features are actively used.

@@ -6,10 +6,11 @@
 
 ## Architecture
 - Namespace: `Nominal\AIProviderOpenCode\` (capital "N" in "Nominal", capital "A", "I", "P", "O" in "AIProviderOpenCode").
-- Three classes, all extending SDK `Abstract*` base classes for OpenAI-compatible behavior:
+- Four classes. Three extend SDK `Abstract*` base classes for OpenAI-compatible behavior; the fourth is a plain helper:
   - `Nominal_AIPO_OpenCodeProvider` → `AbstractApiProvider`
   - `Nominal_AIPO_OpenCodeModelMetadataDirectory` → `AbstractOpenAiCompatibleModelMetadataDirectory`
   - `Nominal_AIPO_OpenCodeTextGenerationModel` → `AbstractOpenAiCompatibleTextGenerationModel`
+  - `Nominal_AIPO_OpenCodeImageConverter` (in `src/Support/`) → standalone image re-encoding helper
 - Production autoloading uses `spl_autoload_register` in `src/autoload.php`. The Composer autoloader is **only for dev tooling** and is stripped from builds.
 - **Do not** add `require`/`include` calls for Composer's `vendor/autoload.php` — use the custom autoloader in production.
 
@@ -37,6 +38,14 @@ The provider checks `AiClient::VERSION` before using newer features:
 - Vision-capable models declare `inputModalities` as `[[text], [text, image]]`; everything else stays `[[text]]`.
 - Only the **image** modality is declared, because the SDK's OpenAI-compatible text generation model can only serialise image (and inline audio) file parts — declaring `document`/`video` would produce runtime errors.
 - The list can be extended at runtime via the `nominal_ai_po_opencode_vision_models` filter.
+
+## Image conversion
+- OpenCode's upstream providers only accept **webp, png, jpeg, gif** images; anything else (BMP, TIFF, HEIC, SVG, or a wrong MIME label) is rejected with a 400.
+- `Nominal_AIPO_OpenCodeTextGenerationModel::getMessagePartContentData()` overrides the SDK method to rewrite unsupported image parts before the request is sent.
+- `Nominal_AIPO_OpenCodeImageConverter` sniffs the real format from the bytes and, when needed, re-encodes via **GD** (no Imagick dependency). Remote images with an unsupported MIME are downloaded first (WP HTTP API, `file_get_contents()` fallback) and then re-encoded inline.
+- Target format defaults to webp, falling back to the first GD-encodable format; override with the `nominal_ai_po_opencode_image_conversion_mime_type` filter.
+- GD cannot decode SVG/TIFF/HEIC, so those still fail upstream — a known limitation.
+- GD + WP HTTP functions used here are stubbed in `wp-stubs.php` for PHPStan.
 
 ## Request headers / session ID
 - Every request merges in `Nominal_AIPO_OpenCodeProvider::requestHeaders()`, which sends `x-opencode-session` (required by OpenCode Go for routing/prompt-caching).

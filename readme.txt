@@ -24,6 +24,7 @@ capabilities — plus image understanding for the multimodal models — directly
 
 * **Text Generation** — Use OpenCode's language models for content creation, summarisation, analysis, and more.
 * **Vision** — Send images to OpenCode's multimodal models, such as Claude Haiku 5.5, Gemini 4 Argon, GPT 6 Luna, Grok 4.7, Kimi K3, Qwen3.8, MiMo, MiniMax M3, and Muse Spark.
+* **Automatic image conversion** — Images that OpenCode rejects (BMP, TIFF, and other unsupported formats) are converted to a supported format (webp/png/jpeg/gif) on the fly.
 * **Chat History** — Maintain conversation context across multiple interactions.
 * **OpenCode Go session header** — Requests carry the `x-opencode-session` header so OpenCode Go can optimise routing and prompt caching.
 * **Dynamic Model Discovery** — Available models are fetched directly from the OpenCode API, so your plugin stays compatible with new releases automatically.
@@ -65,7 +66,7 @@ This plugin connects to the OpenCode API to provide AI capabilities within WordP
 
 **What data is sent and when:**
 * Your OpenCode API key is sent with every request to authenticate with the service.
-* Any text prompts, messages, or content you submit for AI processing are sent to OpenCode's servers. When you use a vision-capable model, any images you attach are sent as well.
+* Any text prompts, messages, or content you submit for AI processing are sent to OpenCode's servers. When you use a vision-capable model, any images you attach are sent as well; unsupported images are converted to a supported format first (and remote images may be downloaded to your server for that conversion).
 * A session identifier is sent in the `x-opencode-session` header so OpenCode Go can optimise routing and prompt caching.
 * A request is made to the OpenCode API to fetch available models when the plugin initializes.
 * Data is only transmitted when AI features are actively used.
